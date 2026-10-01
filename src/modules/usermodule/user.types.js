@@ -11,3 +11,9 @@ export const roleenum = {
     admin:0,
     user:1
 }
+
+
+export const tokenenum = {
+     access:"access",
+     refresh:"refresh"
+}
