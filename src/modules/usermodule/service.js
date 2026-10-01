@@ -26,6 +26,17 @@ export const login = async ({identifier,password})=>{
     if(find.password!==password){
         err("invalid creds" ,400)
     }
-    const token = jwt.sign({email:find.email,_id:find._id},"ajflksjafdl;kj")
-    return token
+    const accesstoken = jwt.sign({email:find.email,_id:find._id},process.env.login_secret_token,
+        {
+            expiresIn:"30min"
+        }
+    )
+        const refreshtoken = jwt.sign({email:find.email,_id:find._id},process.env.refresh_token,
+        {
+            expiresIn:"1day"
+        }
+    )
+    return {data:{accesstoken,
+        refreshtoken
+    }}
 }

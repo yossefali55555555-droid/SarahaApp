@@ -2,7 +2,8 @@ import express from "express"
 import { dbcon } from "./db/db.connection.js"
 import userrouter, { routes } from "./modules/usermodule/controller.js"
 // import noterouter, { notesroutes } from "./modules/notesmodule/controller.js"
-
+import { config } from "dotenv"
+config({ path: "./src/.env" })
 const app = express()
 app.use(express.json())
 export const bootstrap = async()=>{
@@ -16,7 +17,7 @@ export const bootstrap = async()=>{
                 status:code
             })       
     })
-    app.listen(3000,()=>{
+    app.listen(process.env.PORT,()=>{
         console.log ("express and http connected")
     })
 }

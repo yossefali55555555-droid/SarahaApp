@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 export const dbcon = async()=>{
     try {   
-        await mongoose.connect("mongodb://localhost:27017/sarahaApp")
+        await mongoose.connect(process.env.db_url)
         console.log("database connected")
     }
     catch (err){
