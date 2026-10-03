@@ -31,7 +31,8 @@ const usersch = new Schema ({
     },
     gender:{
         type:Number,
-        enum :Object.values(genderenum)
+        enum :Object.values(genderenum),
+        default:genderenum.male
     },
     provider : {
         type:Number,
@@ -63,10 +64,7 @@ const usersch = new Schema ({
     }
 },virtuals:{
     fullname:{
-        get (){
-            return this.firstname + " " + this.lastname
-        }
-        ,set(value){
+        set(value){
             const [firstname,lastname] = value.split(" ")
             if(!firstname||!lastname){
                 throw new Error("should type first or last name")
