@@ -15,7 +15,7 @@ export const bootstrap = async()=>{
             res.status(code).json({
                 msg:err.message,
                 status:code,
-                options:err.cause?.options
+                ERROptions:err.cause?.options
             })       
     })
     app.listen(process.env.PORT,()=>{
