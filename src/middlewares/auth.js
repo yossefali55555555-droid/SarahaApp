@@ -1,6 +1,7 @@
 import { tokenenum } from "../modules/usermodule/user.types.js"
 import jwt from "jsonwebtoken"
 import { usermodel } from "../db/models/usermodel.js"
+import { err } from "../utils/errorhandle.js"
 export const auth = async(req,res,next)=>{
     const {user}=await decodetoken(req.headers.authorization)
     req.user =user

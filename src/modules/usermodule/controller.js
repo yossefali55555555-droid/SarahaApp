@@ -16,7 +16,7 @@ userrouter.post(routes.login,async(req,res)=>{
     const data = await all.login(req.body)
     success({res,status:200,data})
 })
-userrouter.get(routes.me,auth,authorization(roleenum.user),async(req,res)=>{
+userrouter.get(routes.me,auth,authorization(roleenum.admin),async(req,res)=>{
     const user = req.user
     success({res,status:200,data:user})
 })
