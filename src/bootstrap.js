@@ -14,7 +14,8 @@ export const bootstrap = async()=>{
             const code = err.cause?.code || 400
             res.status(code).json({
                 msg:err.message,
-                status:code
+                status:code,
+                options:err.cause?.options
             })       
     })
     app.listen(process.env.PORT,()=>{

@@ -17,6 +17,9 @@ export const decodetoken =  async(authorization,tokentype=tokenenum.access)=>{
         :process.env.refresh
     )
     const user = await usermodel.findById(payload._id)
+      if(!user){
+        err("user not found" , 404)
+    }
     return {user}
 }
 

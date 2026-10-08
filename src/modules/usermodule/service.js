@@ -5,8 +5,10 @@ import jwt from "jsonwebtoken"
 import { tokenenum } from "./user.types.js"
 import bcrypt from "bcrypt"
 import { decodetoken } from "../../middlewares/auth.js"
+import { createhash, ismatch } from "../../utils/security/hash.js"
+import { encryption } from "../../utils/security/encryption.js"
 
-export const signup = async({username,fullname,email,password})=>{
+export const signup = async({username,fullname,email,password,phone})=>{
     const user = await usermodel.findOne({$or:[
         {email},
         {username}
@@ -15,8 +17,8 @@ export const signup = async({username,fullname,email,password})=>{
         err(`${user.username ?"username":"email"} is exists`)
     }
     if(!user){
-        const hashedpassword = await bcrypt.hash(password,10)
-        const data = await usermodel.insertOne({username,fullname,email,password:hashedpassword})
+        const hashedpassword = await createhash(password)
+        const data = await usermodel.insertOne({username,fullname,email,password:hashedpassword,phone:encryption(phone)})
         return data
     }
 }
@@ -30,7 +32,7 @@ export const login = async ({iden,password})=>{
       if(!user){
         err("invalid creds" ,404)
     }
-    const match = bcrypt.compare(password,user.password)
+    const match = await ismatch(password,user.password)
     if(!match){
           err("invalid creds" ,404)
     }

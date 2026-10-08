@@ -4,9 +4,11 @@ import { success } from "../../utils/successresponse.js";
 import { auth } from "../../middlewares/auth.js";
 import { authorization } from "../../middlewares/auth.js";
 import { roleenum } from "./user.types.js";
+import { validation } from "../../middlewares/validation.js";
+import { signupSchema } from "./user.validation.js";
 const userrouter = Router()
 export const routes = {base:"/user",create:"/create",login:"/login",me:"/me",refresh:"/refreshtoken"}
-userrouter.post(routes.create,async(req,res)=>{
+userrouter.post(routes.create,validation(signupSchema),async(req,res)=>{
     const data = await all.signup(req.body)
     success({res,status:200,data})
 })
