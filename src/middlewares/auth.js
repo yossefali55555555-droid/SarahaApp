@@ -21,6 +21,9 @@ export const decodetoken =  async(authorization,tokentype=tokenenum.access)=>{
       if(!user){
         err("user not found" , 404)
     }
+    if(!user.confirmedAt){
+        err("confirm first",400)
+    }
     return {user}
 }
 

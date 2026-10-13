@@ -1,12 +1,33 @@
 import { model, Schema } from "mongoose";
 import { genderenum, providerenum, roleenum } from "../../modules/usermodule/user.types.js";
+import { decryption, encryption } from "../../utils/security/encryption.js";
 
+
+const otpshcema =new Schema( {
+        otp:{
+            min:6,
+            max:6,
+            required:true,
+            type:String
+        },
+        expiresIn:{
+            type:Date,
+             default: () => new Date(Date.now() + 5 * 60 * 1000)
+        }
+    },{
+        _id:false
+    })
+    otpshcema.index("expiresIn",{ //اول ما التاريخ يجي امسحه
+        expireAfterSeconds:0
+    })
 const usersch = new Schema ({
     username:{
         type:String,
-        required:true,
+         required:function(){
+            this.provider == providerenum.system ? true :false;
+        },
         unique:true
-    }
+    } 
     ,firstname :{
         type:String,
         required:true
@@ -23,7 +44,9 @@ const usersch = new Schema ({
     ,
       password :{
         type:String,
-        required:true
+        required:function(){
+            this.provider == providerenum.system ? true :false;
+        }
     },
     age : Number,
     profileimage:{
@@ -53,27 +76,50 @@ const usersch = new Schema ({
     blockedAt:Date,
     phone:{
         type:String,
-    }
-},{timestamps:true,strict :true,strictQuery:true,optimisticConcurrency:true,toJSON:{
-    virtuals:true,
-    getters:true,
-    transform(doc,ret){
-        delete ret.password;
-        delete ret.id;
-        return ret;
-    }
-},virtuals:{
-    fullname:{
-        set(value){
-            const [firstname,lastname] = value.split(" ")
-            if(!firstname||!lastname){
-                throw new Error("should type first or last name")
+        set (value) {
+            return encryption(value)
+        },
+        get(value){
+            return decryption(value)
+        }
+    },
+    otp:otpshcema
+},{
+    timestamps: true,
+    strict: true,
+    strictQuery: true,
+    optimisticConcurrency: true,
+
+    toJSON: {
+        virtuals: true,
+        getters: true,
+        transform(doc, ret) {
+            delete ret.password;
+            delete ret.id;
+            return ret;
+        }
+    },
+
+    toObject: {
+        virtuals: true,
+        getters: true
+    },
+
+    virtuals: {
+        fullname: {
+            set(value) {
+                const [firstname, lastname] = value.split(" ");
+
+                if (!firstname || !lastname) {
+                    throw new Error("should type first or last name");
+                }
+
+                this.set("firstname", firstname);
+                this.set("lastname", lastname);
             }
-            this.set("firstname",firstname)
-            this.set("lastname",lastname)
         }
     }
-}})
+})
 
 
 export const usermodel = model ("users",usersch)
