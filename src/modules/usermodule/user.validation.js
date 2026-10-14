@@ -7,9 +7,11 @@ export const signupSchema = {
     phone : z.string().min(10).max(20).optional(),
     email:z.email(),
     gender:z.enum(genderenum),
-    username:z.string()
-}),query:z.strictObject({
-    id:z.object().optional()
+    username:z.string(),
+    confirmedPassword:z.string()
+}).refine((arg)=>{
+    return arg.password==arg.confirmedPassword,{error:"password missmatch",
+        path:["password","confirmedPassword"]
+    }
 })
-
 }

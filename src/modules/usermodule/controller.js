@@ -8,7 +8,7 @@ import { validation } from "../../middlewares/validation.js";
 import { signupSchema } from "./user.validation.js";
 import { ro } from "zod/locales";
 const userrouter = Router()
-export const routes = {base:"/user",create:"/create",login:"/login",me:"/me",refresh:"/refreshtoken",gmail:"/signup/gmail",confirmed:"/confirm"}
+export const routes = {base:"/user",create:"/create",login:"/login",me:"/me",refresh:"/refreshtoken",gmail:"/signup/gmail",confirmed:"/confirm",forgetPass:"/forget-pass",resetpassword:"/reset-pass"}
 userrouter.post(routes.create,validation(signupSchema),async(req,res)=>{
     const data = await all.signup(req.body)
     success({res,status:200,data})
@@ -39,4 +39,16 @@ userrouter.patch(routes.confirmed,async(req,res)=>{
     const data = await all.confirmed(otp,email)
      success({res,status:200,data})
 })
+
+userrouter.patch(routes.forgetPass,async(req,res)=>{
+    const {email} = req.body
+     await all.forgetPassSendmail(email)
+     success({res,msg:"if you have a valid email the otp will be sent",status:200})
+})
+userrouter.patch(routes.resetpassword,async(req,res)=>{
+    const {email,otp,password} = req.body
+     await all.resetpassword(email,otp,password)
+     success({res,msg:"Done",status:200})
+})
+
 export default userrouter
