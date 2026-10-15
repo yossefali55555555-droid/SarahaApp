@@ -5,8 +5,6 @@ import { decryption, encryption } from "../../utils/security/encryption.js";
 
 const otpshcema =new Schema( {
         otp:{
-            min:6,
-            max:6,
             required:true,
             type:String
         },
