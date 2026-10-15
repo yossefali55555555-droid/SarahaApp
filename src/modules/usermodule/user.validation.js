@@ -9,9 +9,5 @@ export const signupSchema = {
     gender:z.enum(genderenum),
     username:z.string(),
     confirmedPassword:z.string()
-}).refine((arg)=>{
-    return arg.password==arg.confirmedPassword,{error:"password missmatch",
-        path:["password","confirmedPassword"]
-    }
 })
 }

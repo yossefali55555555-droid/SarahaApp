@@ -7,8 +7,10 @@ import { roleenum } from "./user.types.js";
 import { validation } from "../../middlewares/validation.js";
 import { signupSchema } from "./user.validation.js";
 import { ro } from "zod/locales";
+import multer from "multer";
+import { uploadfile } from "../../utils/multer.js";
 const userrouter = Router()
-export const routes = {base:"/user",create:"/create",login:"/login",me:"/me",refresh:"/refreshtoken",gmail:"/signup/gmail",confirmed:"/confirm",forgetPass:"/forget-pass",resetpassword:"/reset-pass"}
+export const routes = {base:"/user",create:"/create",login:"/login",me:"/me",refresh:"/refreshtoken",gmail:"/signup/gmail",confirmed:"/confirm",forgetPass:"/forget-pass",resetpassword:"/reset-pass",uploadfile:"/upload"}
 userrouter.post(routes.create,validation(signupSchema),async(req,res)=>{
     const data = await all.signup(req.body)
     success({res,status:200,data})
@@ -51,4 +53,10 @@ userrouter.patch(routes.resetpassword,async(req,res)=>{
      success({res,msg:"Done",status:200})
 })
 
+
+userrouter.post(routes.uploadfile,auth,uploadfile("/users").single("image"),async(req,res)=>{
+    req.user.profileimage=req.file.path
+    await req.user.save()
+    success({res,status:200})
+})
 export default userrouter
