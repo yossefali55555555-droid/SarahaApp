@@ -15,9 +15,6 @@ app.use(cors({
 export const bootstrap = async()=>{
     await dbcon()
     await rediscon.connect()
-     await rediscon.set("name","yossef")
-    const user1=await rediscon.get("name")
-    console.log(user1)
     app.use(routes.base,userrouter)
     // app.use(notesroutes.base,noterouter)
     // sendemail("yossefali55555555@gmail.com","hi jo",emailTemplate({otp:124,subject:"hi jo"}))

@@ -3,21 +3,21 @@ import { genderenum, providerenum, roleenum } from "../../modules/usermodule/use
 import { decryption, encryption } from "../../utils/security/encryption.js";
 
 
-const otpshcema =new Schema( {
-        otp:{
-            required:true,
-            type:String
-        },
-        expiresIn:{
-            type:Date,
-             default: () => new Date(Date.now() + 5 * 60 * 1000)
-        }
-    },{
-        _id:false
-    })
-    otpshcema.index("expiresIn",{ //اول ما التاريخ يجي امسحه
-        expireAfterSeconds:0
-    })
+// const otpshcema =new Schema( {
+//         otp:{
+//             required:true,
+//             type:String
+//         },
+//         expiresIn:{
+//             type:Date,
+//              default: () => new Date(Date.now() + 5 * 60 * 1000)
+//         }
+//     },{
+//         _id:false
+//     })
+//     otpshcema.index("expiresIn",{ //اول ما التاريخ يجي امسحه
+//         expireAfterSeconds:0
+//     })
 const usersch = new Schema ({
     username:{
         type:String,
@@ -81,7 +81,7 @@ const usersch = new Schema ({
             return decryption(value)
         }
     },
-    otp:otpshcema
+    // otp:otpshcema
 },{
     timestamps: true,
     strict: true,

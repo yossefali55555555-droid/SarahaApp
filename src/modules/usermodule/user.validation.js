@@ -1,5 +1,6 @@
 import z from "zod"
 import { genderenum } from "./user.types.js"
+import { signup } from "./service.js"
 export const signupSchema = {
     body:z.strictObject({
     fullname:z.string(),
@@ -8,6 +9,7 @@ export const signupSchema = {
     email:z.email(),
     gender:z.enum(genderenum),
     username:z.string(),
-    confirmedPassword:z.string()
+    // confirmedPassword:z.string()
 })
+
 }
