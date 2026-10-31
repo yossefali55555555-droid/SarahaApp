@@ -5,6 +5,7 @@ import userrouter, { routes } from "./modules/usermodule/controller.js"
 import cors from "cors"
 import { config } from "dotenv"
 import { rediscon } from "./db/redis.db.connection.js"
+import messagerouter, { messageroutes } from "./modules/notesmodule/controller.js"
 config({ path: "./src/.env" })
 const app = express()
 app.use(express.json())
@@ -16,6 +17,7 @@ export const bootstrap = async()=>{
     await dbcon()
     await rediscon.connect()
     app.use(routes.base,userrouter)
+    app.use(messageroutes.base,messagerouter)
     // app.use(notesroutes.base,noterouter)
     // sendemail("yossefali55555555@gmail.com","hi jo",emailTemplate({otp:124,subject:"hi jo"}))
     app.use((err,req,res,next)=>{

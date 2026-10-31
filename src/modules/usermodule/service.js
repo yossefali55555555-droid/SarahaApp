@@ -7,9 +7,10 @@ import { random1 } from "../../utils/email/createOTP.js"
 import { emailTemplate } from "../../utils/email/emailTemplate.js"
 import { sendemail } from "../../utils/email/sendemail.js"
 import { err } from "../../utils/errorhandle.js"
-import { attemps, block, blockcount, confirmemailkey, resend, userprefix } from "../../utils/redis-services.js"
+import { attemps, attemps2, block, block2, blockcount, blockcount2, confirmemailkey, confirmemailkey2, resend, resend2, session, sessionperfix, userprefix ,userprefix2} from "../../utils/redis-services.js"
 import { createhash, ismatch } from "../../utils/security/hash.js"
 import { providerenum, tokenenum } from "./user.types.js"
+import { nanoid } from "nanoid"
 const client  = new OAuth2Client()
 
 
@@ -68,19 +69,28 @@ export const login = async ({iden,password})=>{
     if(!match){
           err("invalid creds" ,404)
     }
+    const jwtid = nanoid()
         const access = jwt.sign({
             _id:user._id,
             email:user.email
         },
     process.env.access,{
-        expiresIn:"30min"
+        expiresIn:"30min",
+        jwtid
     })
          const refresh = jwt.sign({
             _id:user._id,
             email:user.email
         },
     process.env.refresh,{
-        expiresIn:"30day"
+        expiresIn:"7day",
+        jwtid
+    })
+    await rediscon.set(session(user._id,jwtid),jwtid,{
+        expiration:{
+            type:"EX",
+            value:7*24*60*60
+        }
     })
     return {
         refresh,access
@@ -94,13 +104,14 @@ export const login = async ({iden,password})=>{
 
 
 export const refresh = async (authorization)=>{
-    const {user}=await decodetoken(authorization,tokenenum.refresh)
+    const {user,jti}=await decodetoken(authorization,tokenenum.refresh)
     const access = jwt.sign({
             _id:user._id,
             email:user.email
         },
     process.env.access,{
-        expiresIn:"30min"
+        expiresIn:"30min",
+        jwtid:jti
     })
     return access
 }
@@ -147,7 +158,47 @@ const access = jwt.sign({
     }
 }
 
-
+export const resendconfirmemail = async(email)=>{
+    const user = await usermodel.findOne({email,confirmedAt:{
+        $exists:false
+    }})
+    if(!user){
+        err("user not found",404)
+    }
+    const cannotresend= await rediscon.get(resend(user._id))
+    ||await rediscon.get(block(user._id))
+    if(cannotresend){
+        err("wait shwya ",400)
+    }
+      const attemptsCount =await rediscon.incr(attemps(user._id))
+        if (attemptsCount >=5){
+            const blocKcount = await rediscon.incr(blockcount(user._id))
+            await rediscon.set(block(user._id),0,{
+                expiration:{
+                    type:"EX",
+                    value:bcounts(blocKcount)
+                }
+            })
+            await rediscon.set(attemps(user._id),0)
+        }
+        else{
+         await rediscon.set(resend(user._id),0,{
+            expiration:{
+                type:"EX",
+                value:60
+            }
+         })
+        }
+        const otp = random1()
+        await sendemail(email,"Verify Your Email",emailTemplate({otp,subject:"Verify Your Email"}))
+        await rediscon.set(confirmemailkey(user._id),await createhash(otp),{
+            expiration:{
+                type:"EX",
+                value:5*60
+            }
+         })
+         return {data:{}}
+    }
 export const confirmed = async(otp,email)=>{
     const user = await usermodel.findOne({email,confirmedAt:{
         $exists:false
@@ -177,7 +228,8 @@ export const confirmed = async(otp,email)=>{
                     value:bcounts(blocKcount)
                 }
             })
-                    err(`you are restricted until the block ${durationMinutes} minutes remaining`,401)
+            await rediscon.set(attemps(user._id),0)
+            err(`you are restricted until the block ${durationMinutes} minutes remaining`,401)
         }
            err("Invalid OTP", 400);
     }
@@ -196,17 +248,44 @@ export const forgetPassSendmail = async(email)=>{
     if(!user){
        return
     }
-    if(user.otp?.expiresIn && user.otp.expiresIn > Date.now()){
-        return
+    const isotp= await rediscon.get(confirmemailkey2(user._id))
+    if(isotp){
+        return "you still have otp"
     }
-    const otp = random1()
-    user.otp = {
-    otp: await createhash(otp),
-    expiresIn: new Date(Date.now() + 5 * 60 * 1000)
-};
-    await user.save()
+     const cannotresend= await rediscon.get(resend2(user._id))
+    ||await rediscon.get(block2(user._id))
+    if(cannotresend){
+        err("wait shwya ",400)
+    }
+    const attemptsCount =await rediscon.incr(attemps2(user._id))
+        if (attemptsCount >=5){
+            const blocKcount = await rediscon.incr(blockcount2(user._id))
+            await rediscon.set(block2(user._id),0,{
+                expiration:{
+                    type:"EX",
+                    value:bcounts(blocKcount)
+                }
+            })
+            await rediscon.set(attemps2(user._id),0)
+              err("Too many attempts", 401);
+        }
+           else{
+         await rediscon.set(resend2(user._id),0,{
+            expiration:{
+                type:"EX",
+                value:60
+            }
+         })
+        const otp = random1()
+        await rediscon.set(confirmemailkey2(user._id),await createhash(otp),{
+            expiration:{
+                type:"EX",
+                value:5*60
+            }
+         })
     await sendemail(email,"FORGET PASS OTP",emailTemplate({subject:"FORGET PASS OTP",otp}))
     return {data:{}}
+        }
 }
 
 
@@ -216,12 +295,65 @@ export const resetpassword= async(email,otp,password)=>{
     {
         err("user not found ",404)
     }
-    await chechotp(user,otp)
+     const dbotp = await  rediscon.get(confirmemailkey2(user._id))
+    if(!dbotp){
+        err("invalid or expired otp",404)
+    }
+    const isblocked= await rediscon.get(block2(user._id))
+    if(isblocked){
+        const blockedttl= await rediscon.ttl(block2(user._id))
+        err(`you are restricted until ${Math.ceil(blockedttl/60)}`,401)
+    }
+    const otpcorrect  = await ismatch(otp,dbotp)
+    if(!otpcorrect){
+        const attemptsCount =await rediscon.incr(attemps2(user._id))
+        if (attemptsCount >=5){
+            const blocKcount = await rediscon.incr(blockcount2(user._id))
+            const durationMinutes = bcounts(blocKcount) / 60;
+            await rediscon.set(block2(user._id),0,{
+                expiration:{
+                    type:"EX",
+                    value:bcounts(blocKcount)
+                }
+            })
+            await rediscon.set(attemps2(user._id),0)
+            err(`you are restricted until the block ${durationMinutes} minutes remaining`,401)
+        }
+           err("Invalid OTP", 400);
+    }
+    else{
     user.password = await createhash(password)
     await user.save()
-    return {data:{}}
+    const userkeys=await rediscon.keys(`${userprefix2(user._id)}*`)
+    await rediscon.del(userkeys)
+    return {data:{}}    
+}
 }
 
+export const logout1 = async(userid,jti)=>{
+    const user= await usermodel.findById(userid)
+    if(!user){
+        err("user not found ",404)
+    }
+    const redisSession = await rediscon.del(session(userid,jti))
+    if(redisSession<1){
+        err("you are alerdy logged out",400)
+    }
+    return "logout done ^^"
+}
+
+export const logoutall = async(userid)=>{
+    const user= await usermodel.findById(userid)
+    if(!user){
+        err("user not found ",404)
+    }
+    const redisSession = await rediscon.keys(`${sessionperfix(userid)}*`)
+    const deleteall = await rediscon.del(redisSession)
+    if(deleteall<1){
+        err("you are alerdy logged out",400)
+    }
+    return "logout done ^^"
+}
 // export const chechotp =async(user,otp)=>{
 //     if(!user.otp||user.otp.expiresIn<Date.now()){
 //         err("otp expired ",404)

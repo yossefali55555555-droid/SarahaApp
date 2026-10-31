@@ -2,9 +2,12 @@ import { tokenenum } from "../modules/usermodule/user.types.js"
 import jwt from "jsonwebtoken"
 import { usermodel } from "../db/models/usermodel.js"
 import { err } from "../utils/errorhandle.js"
+import { session } from "../utils/redis-services.js"
+import { rediscon } from "../db/redis.db.connection.js"
 export const auth = async(req,res,next)=>{
-    const {user}=await decodetoken(req.headers.authorization)
+    const {user,jti}=await decodetoken(req.headers.authorization)
     req.user =user
+    req.token =jti
     next()
 }
 export const decodetoken =  async(authorization,tokentype=tokenenum.access)=>{
@@ -21,10 +24,18 @@ export const decodetoken =  async(authorization,tokentype=tokenenum.access)=>{
       if(!user){
         err("user not found" , 404)
     }
-    if(!user.confirmedAt){
-        err("confirm first",400)
+    // if(!user.confirmedAt){
+    //     err("confirm first",400)
+    // }
+    const {jti} =payload
+    if(!jti){
+        err("invalid token",400)
     }
-    return {user}
+    const redisjti =  await rediscon.get(session(user._id,jti))
+    if(!redisjti){
+        err("you^re logged out",400)
+    }
+    return {user,jti}
 }
 
 
